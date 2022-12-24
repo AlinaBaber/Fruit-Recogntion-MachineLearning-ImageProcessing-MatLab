@@ -1,0 +1,52 @@
+function =Features(image_file,Target)
+Fruit = imread(Target);
+Fruit = rgb2gray(Fruit);
+figure;
+imshow(Fruit);
+title('Fruit');
+set_of_fruits = imread(image_file);
+set_of_fruits = rgb2gray(set_of_fruits);
+figure;
+imshow(set_of_fruits);
+title('Set of Fruits');
+fruitPoints = detectSURFFeatures(Fruit);
+scenePoints = detectSURFFeatures(set_of_fruits);
+figure;
+imshow(Fruit);
+title('100 Strongest Feature Points from Box Image');
+hold on;
+plot(selectStrongest(boxPoints, 100));
+figure;
+imshow(set_of_fruits);
+title('300 Strongest Feature Points from Scene Image');
+hold on;
+plot(selectStrongest(scenePoints, 300));
+[boxFeatures, boxPoints] = extractFeatures(Fruit, boxPoints);
+[sceneFeatures, scenePoints] = extractFeatures(set_of_fruits, scenePoints);
+boxPairs = matchFeatures(boxFeatures, sceneFeatures);
+matchedfruitPoints = boxPoints(boxPairs(:, 1), :);
+matchedScenePoints = scenePoints(boxPairs(:, 2), :);
+figure;
+showMatchedFeatures(Fruit, set_of_fruits, matchedBoxPoints, ...
+    matchedScenePoints, 'montage');
+title('Putatively Matched Points (Including Outliers)');
+[tform, inlierBoxPoints, inlierScenePoints] = ...
+    estimateGeometricTransform(matchedBoxPoints, matchedScenePoints, 'affine');
+figure;
+showMatchedFeatures(Fruit, set_of_fruits, inlierBoxPoints, ...
+    inlierScenePoints, 'montage');
+title('Matched Points (Inliers Only)');
+boxPolygon = [1, 1;...                           % top-left
+        size(Fruit, 2), 1;...                 % top-right
+        size(Fruit, 2), size(Fruit, 1);... % bottom-right
+        1, size(Fruit, 1);...                 % bottom-left
+        1, 1];                   % top-left again to close the polygon
+newBoxPolygon = transformPointsForward(tform, boxPolygon);
+figure;
+imshow(set_of_fruits);
+hold on;
+line(newBoxPolygon(:, 1), newBoxPolygon(:, 2), 'Color', 'y');
+title('Detected Box');
+%I2 = imcrop(Fruit,[newBoxPolygon(:, 1),  newBoxPolygon(:, 2)]);
+%figure;
+%imshow(I2);
